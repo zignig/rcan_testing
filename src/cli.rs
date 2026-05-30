@@ -13,6 +13,8 @@ pub struct Args {
     // pub ticket: Option<ServiceTicket>,
     #[arg(long)]
     pub count: Option<i32>,
+    #[arg(short,long , default_value_t = false)]
+    pub test: bool
 }
 
 #[derive(Parser, Clone, Debug)]

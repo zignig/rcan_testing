@@ -10,7 +10,7 @@ use crate::{
 use iroh::{
     EndpointAddr, PublicKey,
     endpoint::{
-        AfterHandshakeOutcome, BeforeConnectOutcome, Connection, ConnectionInfo, EndpointHooks, Side,
+        AfterHandshakeOutcome, BeforeConnectOutcome, Connection, ConnectionInfo, EndpointHooks,
     },
     protocol::{AcceptError, ProtocolHandler},
 };
@@ -63,9 +63,9 @@ impl EndpointHooks for RCanAuth {
             return AfterHandshakeOutcome::Accept;
         }
         // If it is outgoing
-        if side == Side::Client { 
-            return AfterHandshakeOutcome::Accept;
-        }
+        // if side == Side::Client { 
+        //     return AfterHandshakeOutcome::Accept;
+        // }
         // Incoming check ...
         match self.client.get(id).await.unwrap() {
             Some(_) => {
