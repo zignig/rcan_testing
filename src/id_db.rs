@@ -1,3 +1,2 @@
-/// Redb datbase to hold rcan info
-/// 
-pub struct Database;
+// Data base redb for fren
+// pub struct Database;

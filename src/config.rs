@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use n0_error::{AnyError, Result};
 
 use serde::{Deserialize, Serialize};
-use tracing::{error, info};
+use tracing::error;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Settings {

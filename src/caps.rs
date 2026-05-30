@@ -7,10 +7,11 @@
 
 use anyhow::Result;
 // use ed25519_dalek::pkcs8::spki::der::pem::decode;
-use iroh::{EndpointId, SecretKey};
+use iroh::{EndpointId, PublicKey, SecretKey};
 use rcan::{Capability, Expires, Rcan};
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeSet, time::Duration};
+use tracing::info;
 
 /// A set of capabilities
 #[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Clone, Serialize, Deserialize)]
@@ -44,22 +45,41 @@ impl<C: Capability + Ord> Capability for CapSet<C> {
 #[derive(Debug, PartialOrd, PartialEq, Eq, Clone, Ord, Serialize, Deserialize)]
 pub enum Cap {
     All,
-    Sign,
+    Info,
     Issue,
     Revoke,
     Status,
+    PathTest { path: String },
 }
 
 impl Capability for Cap {
     fn permits(&self, other: &Self) -> bool {
         match (self, other) {
             (Cap::All, _) => true,
-            (Cap::Sign, Cap::Sign) => true,
+            (Cap::Info, Cap::Info) => true,
             (Cap::Issue, Cap::Issue) => true,
             (Cap::Revoke, Cap::Revoke) => true,
             (Cap::Status, Cap::Status) => true,
+            (Cap::PathTest { path }, Cap::PathTest { path: otherpath }) => {
+                self.path_check(path, otherpath)
+            }
             (_, _) => false,
         }
+    }
+}
+
+impl Cap {
+    fn path_check(&self, source: &String, other: &String) -> bool {
+        if !source.starts_with("/") {
+            return false;
+        }
+        if !other.starts_with("/") {
+            return false;
+        }
+        if other.starts_with(source) {
+            return true;
+        }
+        false
     }
 }
 
@@ -94,12 +114,18 @@ impl Caps {
         Self::new([Cap::All])
     }
 
-    pub fn sign() -> Self {
-        Self::new([Cap::Sign])
+    pub fn info() -> Self {
+        Self::new([Cap::Info])
     }
 
     pub fn issue() -> Self {
-        Self::new([Cap::Sign, Cap::Issue])
+        Self::new([
+            Cap::Info,
+            Cap::Issue,
+            Cap::PathTest {
+                path: "/hello".to_string(),
+            },
+        ])
     }
 
     pub fn status() -> Self {
@@ -143,4 +169,31 @@ impl Caps {
         let deser = Rcan::<Caps>::decode(&decoded)?;
         Ok(deser)
     }
+}
+
+pub fn issue(
+    key: PublicKey,
+    status: bool,
+    all: bool,
+    duration: Option<String>,
+    secret: SecretKey,
+) -> String {
+    let dur = if let Some(duration) = duration {
+        humantime::parse_duration(duration.as_str()).expect("Bad duration")
+    } else {
+        // 1 hour
+        Duration::from_mins(60)
+    };
+    let cap = if status {
+        Caps::status()
+    } else {
+        let mut c = Caps::issue();
+        if all {
+            c = Caps::info()
+        }
+        c
+    };
+    let rc = cap.encoded(&secret, key, dur).unwrap();
+    info!("{:#?}", rc);
+    rc
 }

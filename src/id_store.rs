@@ -10,6 +10,7 @@ use rcan::Rcan;
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc::Sender;
 use tracing::debug;
+use tracing::info;
 
 use crate::caps::Caps;
 
@@ -45,9 +46,9 @@ impl Fren {
     }
 
     // TDO add the rest of the permits
-    pub fn can_sign(&self) -> bool {
+    pub fn can_info(&self) -> bool {
         if let Some(rcan) = self.rcan.clone() {
-            let base_cap = Caps::sign();
+            let base_cap = Caps::info();
             let cap = rcan.capability();
             return cap.permits(&base_cap);
         }
@@ -207,12 +208,14 @@ impl IdClient {
     }
 
     pub async fn new_fren(&self, key: EndpointId, rcan: Rcan<Caps>) {
+        // info!("new fren {:#?} -- {:#?}",key,rcan);
         match self.inner.rpc(Get { key }).await.unwrap() {
             Some(fren) => {
-                debug!("existing fren => {:#?}", fren);
+                info!("existing fren => {:}", fren.id.fmt_short());
                 return;
             }
             None => {
+                info!("make a new fren");
                 let mut value = Fren::new(key);
                 value.rcan = Some(rcan);
                 self.inner.rpc(Set { key, value }).await.unwrap();

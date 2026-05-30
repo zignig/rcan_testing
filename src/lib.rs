@@ -1,11 +1,15 @@
 
 mod id_db;
-mod caps;
+pub mod caps;
 mod id_store;
 mod config;
-mod cli;
+pub mod cli;
+pub mod connect;
+pub mod auth;
+pub mod irpc;
 
 pub use cli::Args;
 pub use config::Settings;
 pub use id_store::{IdClient,IdentityApi};
+pub use auth::incoming;
 
