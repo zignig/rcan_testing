@@ -7,7 +7,7 @@ use iroh::protocol::RouterBuilder;
 use n0_error::Result;
 
 use rcan_testing::auth;
-use rcan_testing::capset::{self,Caps};
+use rcan_testing::capset::{self, Caps};
 use rcan_testing::capstack::CapStack;
 use rcan_testing::cli::Command;
 use rcan_testing::connect::AuthClient;
@@ -88,6 +88,8 @@ async fn main() -> Result<()> {
             info!("{:?}", e);
             let cl = client.editor();
             println!("{:#?}", cl.info("fnord").await);
+            let _ = router.shutdown().await;
+            return Ok(());
         } else {
             error!("No RCAN");
         }
