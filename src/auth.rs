@@ -4,9 +4,10 @@
 pub const ALPN: &[u8] = b"rcan/auth/0";
 
 use crate::{
-    caps::{self, Caps},
+    capset::{self, Caps},
     id_store::IdClient,
 };
+
 use iroh::{
     EndpointAddr, PublicKey,
     endpoint::{
@@ -14,6 +15,7 @@ use iroh::{
     },
     protocol::{AcceptError, ProtocolHandler},
 };
+
 use n0_error::{AnyError, anyerr};
 use rcan::Rcan;
 use std::{str, time::SystemTime};
@@ -63,7 +65,7 @@ impl EndpointHooks for RCanAuth {
             return AfterHandshakeOutcome::Accept;
         }
         // If it is outgoing
-        // if side == Side::Client { 
+        // if side == Side::Client {
         //     return AfterHandshakeOutcome::Accept;
         // }
         // Incoming check ...
@@ -104,7 +106,7 @@ impl ProtocolHandler for AuthProtocol {
         let rcan_bytes = recv.read_to_end(254).await.map_err(AcceptError::from_err)?;
         // decode checks the signature of the rcan.
         // so we know its good.
-        let decode = caps::Caps::decode(rcan_bytes);
+        let decode = capset::Caps::decode(rcan_bytes);
         match decode {
             Ok(d) => {
                 // info!("{:#?}", &d);

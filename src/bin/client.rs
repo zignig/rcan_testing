@@ -1,22 +1,22 @@
 /// Rcan testing client
-/// 
-
+///
 use clap::Parser;
 use iroh::Endpoint;
 use iroh::endpoint::presets;
 use iroh::protocol::RouterBuilder;
 use n0_error::Result;
+
+use rcan_testing::auth;
+use rcan_testing::capset::{self,Caps};
 use rcan_testing::capstack::CapStack;
-use rcan_testing::caps::Caps;
 use rcan_testing::cli::Command;
 use rcan_testing::connect::AuthClient;
-use tracing::error;
-use tracing::info;
-use rcan_testing::auth;
-use rcan_testing::caps;
 use rcan_testing::incoming;
 use rcan_testing::irpc;
 use rcan_testing::{Args, IdentityApi, Settings};
+
+use tracing::error;
+use tracing::info;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -44,7 +44,7 @@ async fn main() -> Result<()> {
                 all,
                 duration,
             } => {
-                let _cap = caps::issue(key, status, all, duration, config.secret());
+                let _cap = capset::issue(key, status, all, duration, config.secret());
             }
         }
     }
@@ -70,7 +70,7 @@ async fn main() -> Result<()> {
     if let Some(target) = config.get_target() {
         if let Some(rcan) = config.get_rcan() {
             // insert the target into the local id store
-            let rc_obj = caps::Caps::decode(rcan.clone().into_bytes()).expect("bad rcan");
+            let rc_obj = Caps::decode(rcan.clone().into_bytes()).expect("bad rcan");
             id_client.new_fren(target, rc_obj.clone()).await;
             // println!("{:#?}", rc_obj);
             // test out the cap stack.
@@ -78,10 +78,9 @@ async fn main() -> Result<()> {
                 println!("woohoo !!");
                 let cs = CapStack::new(rc_obj.clone(), rc_obj);
                 let st = cs.encode().expect("bad rcan");
-                println!("{:#?}",&st);
+                println!("{:#?}", &st);
                 let cs2 = CapStack::<Caps>::decode(st.as_bytes());
-                println!("again {:#?}",cs2);
-
+                println!("again {:#?}", cs2);
             }
 
             let mut client = AuthClient::new(endpoint.clone(), target, rcan);

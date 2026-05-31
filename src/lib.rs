@@ -1,6 +1,8 @@
 
 mod id_db;
-pub mod caps;
+pub mod capset;
+mod caps;
+
 mod id_store;
 mod config;
 pub mod cli;

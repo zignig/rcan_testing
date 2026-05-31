@@ -12,7 +12,7 @@ use tokio::sync::mpsc::Sender;
 use tracing::debug;
 use tracing::info;
 
-use crate::caps::Caps;
+use crate::capset::Caps;
 
 // Stored endpoint data
 #[derive(Debug, Clone, Serialize, Deserialize)]
