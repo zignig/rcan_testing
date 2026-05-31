@@ -7,6 +7,7 @@ pub mod cli;
 pub mod connect;
 pub mod auth;
 pub mod irpc;
+pub mod capstack;
 
 pub use cli::Args;
 pub use config::Settings;

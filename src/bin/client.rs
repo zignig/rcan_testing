@@ -1,18 +1,17 @@
+/// Rcan testing client
+/// 
+
 use clap::Parser;
 use iroh::Endpoint;
 use iroh::endpoint::presets;
 use iroh::protocol::RouterBuilder;
-/// Rcan testing
-///
-///
 use n0_error::Result;
-use rcan_testing::caps::CapStack;
+use rcan_testing::capstack::CapStack;
 use rcan_testing::caps::Caps;
 use rcan_testing::cli::Command;
 use rcan_testing::connect::AuthClient;
 use tracing::error;
 use tracing::info;
-
 use rcan_testing::auth;
 use rcan_testing::caps;
 use rcan_testing::incoming;
