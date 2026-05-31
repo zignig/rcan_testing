@@ -215,7 +215,7 @@ impl IdClient {
                 return;
             }
             None => {
-                info!("make a new fren");
+                info!("make a new fren {}",key.fmt_short());
                 let mut value = Fren::new(key);
                 value.rcan = Some(rcan);
                 self.inner.rpc(Set { key, value }).await.unwrap();

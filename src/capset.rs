@@ -150,7 +150,7 @@ pub fn issue(
     } else {
         let mut c = Caps::issue();
         if all {
-            c = Caps::info()
+            c = Caps::all()
         }
         c
     };

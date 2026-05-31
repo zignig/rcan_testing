@@ -16,18 +16,22 @@ use tracing::{error, info};
 use crate::IdClient;
 
 
-// Irpc structs
-#[derive(Debug, Serialize, Deserialize)]
-struct Info {
-    data: String,
-}
-
+// The irpc connection.
 #[rpc_requests(message = SigningMessage)]
 #[derive(Serialize, Deserialize, Debug)]
 enum RcanEditProtocol {
     #[rpc(tx=oneshot::Sender<Result<String,String>>)]
     Info(Info),
 }
+
+// Irpc structs
+#[derive(Debug, Serialize, Deserialize)]
+struct Info {
+    data: String,
+}
+
+
+
 
 #[derive(Debug)]
 pub struct RcanEditor {
