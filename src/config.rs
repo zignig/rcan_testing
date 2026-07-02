@@ -14,6 +14,7 @@ pub struct Settings {
     target: Option<EndpointId>,
     origin: Option<VerifyingKey>,
     rcan: Option<String>,
+    database: Option<PathBuf>,
     #[serde(skip)]
     config_path: PathBuf,
 }
@@ -46,6 +47,7 @@ impl Settings {
             target: None,
             origin: None,
             rcan: None,
+            database: None,
             config_path,
         };
         set.save();
@@ -61,6 +63,10 @@ impl Settings {
     //     self.save();
     //     Ok(())
     // }
+
+    pub fn get_database(&self) -> Option<PathBuf> {
+        self.clone().database
+    }
 
     pub fn secret(&self) -> SecretKey {
         self.clone().secret

@@ -1,64 +1,67 @@
-// Data base redb for fren
-// pub struct Database;
+// turso database with toasty
 
-use n0_error::Result;
-use postcard::to_stdvec;
-use redb::{Database, TableDefinition, TypeName, Value};
 use std::path::PathBuf;
+use anyhow::{anyhow,Result};
+use iroh::PublicKey;
 
-use crate::id_store::Fren;
-
-// Database
-const NODE_TABLE: TableDefinition<&[u8; 32], Fren> = TableDefinition::new("nodes");
-
-// KV impl
-impl Value for Fren {
-    type SelfType<'a>
-        = Fren
-    where
-        Self: 'a;
-
-    type AsBytes<'a>
-        = Vec<u8>
-    where
-        Self: 'a;
-
-    fn fixed_width() -> Option<usize> {
-        None
-    }
-
-    fn from_bytes<'a>(data: &'a [u8]) -> Self::SelfType<'a>
-    where
-        Self: 'a,
-    {
-        postcard::from_bytes(data).unwrap()
-    }
-
-    fn as_bytes<'a, 'b: 'a>(value: &'a Self::SelfType<'b>) -> Self::AsBytes<'a>
-    where
-        Self: 'b,
-    {
-        to_stdvec(value).unwrap()
-    }
-
-    fn type_name() -> redb::TypeName {
-        TypeName::new("Fren")
-    }
+#[derive(Debug, PartialEq, toasty::Embed)]
+pub enum EndPointStatus {
+    #[column(variant = 1)]
+    Pending,
+    #[column(variant = 2)]
+    Active,
+    #[column(variant = 3)]
+    Done,
 }
 
-pub struct IDdatabase {
-    path: PathBuf,
-    db: Database,
+#[derive(Debug, toasty::Model)]
+pub struct FrenProxy {
+    #[key]
+    id: String,
+    status: EndPointStatus,
+    nickname: Option<String>,
+    secret: Option<Vec<u8>>,
 }
 
-impl IDdatabase {
-    pub fn new(path: PathBuf) -> Result<Self> {
-        let db = Database::create(&path).expect("database can't be opened");
-        // Create the tables
-        let write_txn = db.begin_write().unwrap();
-        let _ = write_txn.open_table(NODE_TABLE).unwrap();
-        write_txn.commit().unwrap();
-        
-        Ok(Self { path, db })
+// The pub struct
+pub struct PersistStore {
+    db: toasty::Db,
+}
+
+impl PersistStore {
+    pub async fn new(path: PathBuf) -> Result<Self> {
+        if let Some(path) = path.to_str() {
+            let conn = format!("turso:{}", path);
+            let db = toasty::Db::builder()
+                .models(toasty::models!(crate::*))
+                .connect(&conn)
+                .await?;
+            let _ = db.push_schema().await;
+            return Ok(Self { db });
+        } else {
+            return Err(anyhow!("bad db string"));
+        }
+    }
+
+    pub async fn add(&mut self, pk: PublicKey) -> Result<FrenProxy> {
+        let ep = toasty::create!(FrenProxy {
+            id: pk.to_string(),
+            status: EndPointStatus::Pending
+        })
+        .exec(&mut self.db)
+        .await?;
+        Ok(ep)
+    }
+
+    pub async fn all(&mut self) -> Vec<FrenProxy> {
+        FrenProxy::all().exec(&mut self.db).await.expect("fail find all")
+    }
+
+    pub async fn get(&mut self, pk: PublicKey) -> Option<FrenProxy> {
+        let pks = pk.to_string();
+        match FrenProxy::get_by_id(&mut self.db, pks).await {
+            Ok(fren) => Some(fren),
+            Err(_) => None,
+        }
     }
 }

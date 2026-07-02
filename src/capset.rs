@@ -155,6 +155,6 @@ pub fn issue(
         c
     };
     let rc = cap.encoded(&secret, key, dur).unwrap();
-    info!("{:#?}", rc);
+    println!("{:#?}", rc);
     rc
 }

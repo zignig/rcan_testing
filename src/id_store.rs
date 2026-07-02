@@ -1,5 +1,6 @@
 // A cache of the rcan authenticated endpoints.
 
+use std::path::PathBuf;
 use std::{collections::BTreeMap, time::SystemTime};
 
 use iroh::EndpointId;
@@ -13,6 +14,7 @@ use tracing::debug;
 use tracing::info;
 
 use crate::capset::Caps;
+use crate::id_db::PersistStore;
 
 // Stored endpoint data
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -106,6 +108,7 @@ enum StorageProtocol {
 struct Actor {
     recv: tokio::sync::mpsc::Receiver<IdentityMessage>,
     store: BTreeMap<EndpointId, Fren>,
+    db: Option<PersistStore>,
 }
 
 impl Actor {
@@ -177,12 +180,17 @@ pub struct IdentityApi {
 }
 
 impl IdentityApi {
-    pub fn new() -> IdentityApi {
+    pub async fn new(db_path: Option<PathBuf>) -> IdentityApi {
         let (tx, rx) = tokio::sync::mpsc::channel(5);
         let store = BTreeMap::default();
+        let db = match db_path {
+            Some(path ) => Some( PersistStore::new(path).await.unwrap()),
+            None => None,
+        };
         let actor = Actor {
             recv: rx,
             store: store,
+            db: db,
         };
         n0_future::task::spawn(actor.run());
         IdentityApi { tx: tx.clone() }

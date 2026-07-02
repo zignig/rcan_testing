@@ -15,13 +15,20 @@ use rcan_testing::incoming;
 use rcan_testing::irpc;
 use rcan_testing::{Args, IdentityApi, Settings};
 
-use tracing::error;
 use tracing::info;
+use tracing::{Level, error};
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    tracing_subscriber::fmt::init();
-
+    // tracing_subscriber::fmt::init();
+    let subscriber = tracing_subscriber::fmt()
+        // filter spans/events with level TRACE or higher.
+        .with_max_level(Level::DEBUG)
+        // build but do not install the subscriber.
+        .finish();
+    tracing::subscriber::with_default(subscriber, || {
+        info!("This will be logged to stdout");
+    });
     // Arguments
     let args = Args::parse();
     // info!("cmd line {:#?}", args);
@@ -33,7 +40,7 @@ async fn main() -> Result<()> {
     println!("id {}", config.public());
 
     // Create the identity client
-    let id_service = IdentityApi::new();
+    let id_service = IdentityApi::new(config.get_database()).await;
     let id_client = id_service.client();
 
     if let Some(command) = args.command {
@@ -72,7 +79,7 @@ async fn main() -> Result<()> {
             // insert the target into the local id store
             let rc_obj = Caps::decode(rcan.clone().into_bytes()).expect("bad rcan");
             id_client.new_fren(target, rc_obj.clone()).await;
-            // println!("{:#?}", rc_obj);
+            println!("{:#?}", rc_obj);
             // test out the cap stack.
             if args.test {
                 println!("woohoo !!");
