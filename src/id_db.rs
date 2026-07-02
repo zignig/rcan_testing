@@ -1,8 +1,8 @@
 // turso database with toasty
 
-use std::path::PathBuf;
-use anyhow::{anyhow,Result};
+use anyhow::{Result, anyhow};
 use iroh::PublicKey;
+use std::path::PathBuf;
 
 #[derive(Debug, PartialEq, toasty::Embed)]
 pub enum EndPointStatus {
@@ -43,6 +43,15 @@ impl PersistStore {
         }
     }
 
+    pub async fn new_mem() -> Result<Self> {
+        let db = toasty::Db::builder()
+            .models(toasty::models!(crate::*))
+            .connect("turso::memory:")
+            .await?;
+        let _ = db.push_schema().await;
+        return Ok(Self { db });
+    }
+
     pub async fn add(&mut self, pk: PublicKey) -> Result<FrenProxy> {
         let ep = toasty::create!(FrenProxy {
             id: pk.to_string(),
@@ -54,7 +63,10 @@ impl PersistStore {
     }
 
     pub async fn all(&mut self) -> Vec<FrenProxy> {
-        FrenProxy::all().exec(&mut self.db).await.expect("fail find all")
+        FrenProxy::all()
+            .exec(&mut self.db)
+            .await
+            .expect("fail find all")
     }
 
     pub async fn get(&mut self, pk: PublicKey) -> Option<FrenProxy> {

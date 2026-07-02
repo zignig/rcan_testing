@@ -14,6 +14,7 @@ use rcan_testing::connect::AuthClient;
 use rcan_testing::incoming;
 use rcan_testing::irpc;
 use rcan_testing::{Args, IdentityApi, Settings};
+use rcan_testing::repl;
 
 use tracing::info;
 use tracing::{Level, error};
@@ -95,6 +96,10 @@ async fn main() -> Result<()> {
             info!("{:?}", e);
             let cl = client.editor();
             println!("{:#?}", cl.info("fnord").await);
+
+            let mut rpl = repl::make_repl().expect("repl test");
+            rpl.run().await.expect("fail");
+
             let _ = router.shutdown().await;
             return Ok(());
         } else {

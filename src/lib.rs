@@ -2,6 +2,7 @@
 mod id_db;
 pub mod capset;
 mod caps;
+pub mod repl;
 
 mod id_store;
 mod config;

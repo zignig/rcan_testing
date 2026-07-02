@@ -108,7 +108,7 @@ enum StorageProtocol {
 struct Actor {
     recv: tokio::sync::mpsc::Receiver<IdentityMessage>,
     store: BTreeMap<EndpointId, Fren>,
-    db: Option<PersistStore>,
+    db: PersistStore,
 }
 
 impl Actor {
@@ -131,6 +131,7 @@ impl Actor {
 
             IdentityMessage::Set(set) => {
                 let WithChannels { tx, inner, .. } = set;
+                let _ = self.db.add(inner.key.clone()).await;
                 self.store.insert(inner.key, inner.value);
                 tx.send(()).await.ok();
             }
@@ -145,6 +146,7 @@ impl Actor {
                 let WithChannels { tx, inner, .. } = check;
                 let is_good = match self.store.get(&inner.key) {
                     Some(fren) => {
+                        let _ = self.db.add(inner.key.clone()).await;
                         // Check to see if the rbac is still valid
                         let mut status = false;
                         if let Some(rcan) = fren.rcan.clone() {
@@ -184,8 +186,8 @@ impl IdentityApi {
         let (tx, rx) = tokio::sync::mpsc::channel(5);
         let store = BTreeMap::default();
         let db = match db_path {
-            Some(path ) => Some( PersistStore::new(path).await.unwrap()),
-            None => None,
+            Some(path) => PersistStore::new(path).await.unwrap(),
+            None => PersistStore::new_mem().await.unwrap(),
         };
         let actor = Actor {
             recv: rx,
@@ -223,7 +225,7 @@ impl IdClient {
                 return;
             }
             None => {
-                info!("make a new fren {}",key.fmt_short());
+                info!("make a new fren {}", key.fmt_short());
                 let mut value = Fren::new(key);
                 value.rcan = Some(rcan);
                 self.inner.rpc(Set { key, value }).await.unwrap();
