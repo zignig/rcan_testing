@@ -6,30 +6,29 @@ use iroh::endpoint::presets;
 use iroh::protocol::RouterBuilder;
 use n0_error::Result;
 
-use rcan_testing::auth;
-use rcan_testing::capset::{self, Caps};
-use rcan_testing::capstack::CapStack;
-use rcan_testing::cli::Command;
-use rcan_testing::connect::AuthClient;
-use rcan_testing::incoming;
-use rcan_testing::irpc;
-use rcan_testing::{Args, IdentityApi, Settings};
-use rcan_testing::repl;
+use rcan_testing::{
+    Args, IdentityApi, Settings, auth,
+    capset::{self, Caps},
+    capstack::CapStack,
+    cli::Command,
+    connect::AuthClient,
+    incoming, irpc, repl,
+};
 
 use tracing::info;
-use tracing::{Level, error};
+use tracing::error;
+use tracing_subscriber::filter::{LevelFilter, Targets};
+use tracing_subscriber::prelude::*;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // tracing_subscriber::fmt::init();
-    let subscriber = tracing_subscriber::fmt()
-        // filter spans/events with level TRACE or higher.
-        .with_max_level(Level::DEBUG)
-        // build but do not install the subscriber.
-        .finish();
-    tracing::subscriber::with_default(subscriber, || {
-        info!("This will be logged to stdout");
-    });
+    let mut filter = Targets::new();
+    filter = filter.with_target("rcan_testing", LevelFilter::DEBUG);
+    tracing_subscriber::registry()
+        .with(tracing_subscriber::fmt::layer())
+        .with(filter)
+        .init();
+
     // Arguments
     let args = Args::parse();
     // info!("cmd line {:#?}", args);
@@ -96,9 +95,9 @@ async fn main() -> Result<()> {
             info!("{:?}", e);
             let cl = client.editor();
             println!("{:#?}", cl.info("fnord").await);
-
-            let mut rpl = repl::make_repl().expect("repl test");
-            rpl.run().await.expect("fail");
+            
+            let mut rpl = repl::make_repl(cl).await.expect("repl broken");
+            let _ = rpl.run_async().await;
 
             let _ = router.shutdown().await;
             return Ok(());

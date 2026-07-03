@@ -47,6 +47,10 @@ impl Fren {
         }
     }
 
+    pub fn get_id(&self) -> EndpointId { 
+        self.id.clone()
+    }
+
     // TDO add the rest of the permits
     pub fn can_info(&self) -> bool {
         if let Some(rcan) = self.rcan.clone() {

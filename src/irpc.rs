@@ -15,13 +15,14 @@ use tracing::{error, info};
 
 use crate::IdClient;
 
-
 // The irpc connection.
 #[rpc_requests(message = SigningMessage)]
 #[derive(Serialize, Deserialize, Debug)]
 enum RcanEditProtocol {
     #[rpc(tx=oneshot::Sender<Result<String,String>>)]
     Info(Info),
+    #[rpc(tx=oneshot::Sender<Result<Vec<String>,String>>)]
+    List(List),
 }
 
 // Irpc structs
@@ -30,8 +31,9 @@ struct Info {
     data: String,
 }
 
-
-
+#[derive(Debug, Serialize, Deserialize)]
+struct List {
+}
 
 #[derive(Debug)]
 pub struct RcanEditor {
@@ -67,9 +69,18 @@ impl ProtocolHandler for RcanEditor {
                         tx.send(Ok(val)).await.ok();
                     } else {
                         error!("Rcan Does not have info");
-                        tx.send(Err("No info permission".to_string()))
-                            .await
-                            .ok();
+                        tx.send(Err("No info permission".to_string())).await.ok();
+                    }
+                },
+                SigningMessage::List(msg) => { 
+                    let WithChannels { tx, .. } = msg;
+                    if fren.can_info() {
+                        let val = self.id_client.list().await.expect("broken");
+                        let names = val.iter().map(| item | item.get_id().to_string()).collect();
+                        tx.send(Ok(names)).await.ok();
+                    } else {
+                        error!("Rcan Does not have info");
+                        tx.send(Err("No info permission".to_string())).await.ok();
                     }
                 }
             }
@@ -91,7 +102,10 @@ impl RcanClient {
         }
     }
 
-    //TODO fix the result stack
+    pub async fn list(&self) -> Result<Vec<String>, anyhow::Error> {
+        self.inner.rpc(List {}).await?.map_err(|err| anyhow::anyhow!(err))
+    }
+
     pub async fn info(&self, data: &str) -> Result<String, anyhow::Error> {
         self.inner
             .rpc(Info {
